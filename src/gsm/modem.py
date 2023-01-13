@@ -38,7 +38,7 @@ class MODEM(ATBase):
         TODO: Not Tested
         """
         self.sendCmd("AT")
-        self.waitResponse()
+        return self.waitResponse()
 
     def getModemInfo(self):
         """

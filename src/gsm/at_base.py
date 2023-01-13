@@ -1,5 +1,5 @@
-from time import ticks_ms
-
+import sys
+from time import ticks_ms, sleep
 from micropython import const
 
 
@@ -8,7 +8,7 @@ class ATBase:
     CONNECT = const(1)
     BUSY = const(2)
 
-    def __init__(self, stream):
+    def __init__(self, stream, **kwargs):
         # check arg
         if not hasattr(stream, "write") or not hasattr(stream, "readline"):
             raise Exception("Invalid Argument", stream)
@@ -49,13 +49,16 @@ class ATBase:
     def waitResponse(self, rsp1="OK\r\n", rsp2="ERROR\r\n", timeout=1000):
         rsp = bytearray()
         startMillis = ticks_ms()
-        while (ticks_ms() - startMillis) < timeout:
-            if self.stream.any():
-                rsp.extend(bytearray(self.stream.readline()))
-                if rsp.decode("utf-8").endswith(rsp1):
-                    return True, rsp
-                if rsp.decode("utf-8").endswith(rsp2):
-                    return False, rsp
+        try:
+            while (ticks_ms() - startMillis) < timeout:
+                if self.stream.any():
+                    rsp.extend(bytearray(self.stream.readline()))
+                    if rsp.decode("utf-8").endswith(rsp1):
+                        return True, rsp
+                    if rsp.decode("utf-8").endswith(rsp2):
+                        return False, rsp
+        except Exception as err:
+            print(f"waitResponse failed {err}")
         return False, rsp
 
     def sendAndGet(self, cmd: str) -> str:
@@ -109,3 +112,8 @@ class ATBase:
             except Exception as err:
                 print(f"Exception caught: {err}")
                 print("To exit: ctrl+c")
+
+    def enter_command_mode(self):
+        sleep(1)
+        self.stream.write("+++")
+        sleep(1)

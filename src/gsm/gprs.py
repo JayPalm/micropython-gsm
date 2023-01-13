@@ -11,7 +11,12 @@ class GPRS(ATBase):
     """
 
     def __init__(
-        self, stream, apn: str = "", gsm_username: str = "", gsm_password: str = ""
+        self,
+        stream,
+        apn: str = "",
+        gsm_username: str = "",
+        gsm_password: str = "",
+        **kwargs,
     ):
         super().__init__(stream)
         self.apn = apn
@@ -111,16 +116,24 @@ class GPRS(ATBase):
         data = self.sendAndGet(cmd)
         if data:
             data = data.replace("+CEREG: ", "").split(",")
-            return data[1]
+            return int(data[1])
         return -1
 
     def connect_ppp(self):
         # Connect to network and establish PPP
+        if hasattr(self, "ppp"):
+            print("Closing Existing PPP")
+            self.ppp.active(False)
 
+        sleep(1)
+        self.stream.write("+++")
+        sleep(1)
+        self.waitResponse()
         self.sendCmd(f'AT+CGDCONT=1,"IP","{self.apn}"')
         self.waitResponse()
         self.sendCmd('AT+CGDATA="PPP",1')
         self.waitResponse()
+        self.sendAndGet("ATO")
         sleep(2)
         # Hand modem object off to system PPP module
         self.ppp = PPP(self.stream)
@@ -139,12 +152,15 @@ class GPRS(ATBase):
         print("Failed to establish PPP. Please check config")
         return False
 
-    def test_ppp_connection(self) -> bool:
+    def test_ppp_connection(
+        self, test_domain: str = "micropython.org", test_port: int = 80
+    ) -> bool:
         try:
             import socket
 
-            addr = socket.getaddrinfo("micropython.org", 80)[0][-1]
+            addr = socket.getaddrinfo(test_domain, test_port)[0][-1]
             if addr:
+                del addr
                 return True
         except Exception:
             ...

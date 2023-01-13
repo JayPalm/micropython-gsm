@@ -18,6 +18,7 @@ class SIM7000(GPS, GPRS, MODEM):
         apn: str = "",
         gsm_username: str = "",
         gsm_password: str = "",
+        **kwargs,
     ):
         self.power_pin = Pin(power_pin, Pin.OUT)
         self.uart_rx = uart_rx
@@ -82,3 +83,12 @@ class SIM7000(GPS, GPRS, MODEM):
         cmd = "AT+CGMR"
         self.sendCmd(cmd)
         return self.sendAndGet(cmd)
+
+    def getBatteryLevel(self) -> str:
+        cmd = "AT+CBC"
+
+        return self.sendAndGet(cmd)
+
+
+# Break PPP Mode?
+# time.sleep(1); gsm.stream.write("+++"); time.sleep(1)

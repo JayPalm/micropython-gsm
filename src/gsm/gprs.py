@@ -109,7 +109,22 @@ class GPRS(ATBase):
         """Get Operator"""
         self.sendCmd("AT+COPS?")
         res, data = self.waitResponse()
-        return (res, data.decode())
+        # return (res, data.decode())
+        data = data.decode()
+        return data
+
+    def getOperatorStr(self) -> str:
+        "Get Operator"
+        self.sendCmd("AT+COPS?")
+        res, data = self.waitResponse()
+        if res:
+            data = data.decode()
+            data = data.replace("AT+COPS?\r\r\n+COPS:", "").replace(
+                "\r\n\r\nOK\r\n", ""
+            )
+            data_arr = data.split(",")
+            return data_arr[2].strip('"')
+        return ""
 
     def getRegistrationStatus(self):
         cmd = "AT+CEREG?"
@@ -119,22 +134,26 @@ class GPRS(ATBase):
             return int(data[1])
         return -1
 
+    def close_ppp(self):
+        if hasattr(self, "ppp"):
+            if self.ppp.active():
+                print("Closing Existing PPP")
+                self.ppp.active(False)
+        at_resp = self.testAT()
+        return at_resp
+
     def connect_ppp(self):
         # Connect to network and establish PPP
-        if hasattr(self, "ppp"):
-            print("Closing Existing PPP")
-            self.ppp.active(False)
-
-        sleep(1)
-        self.stream.write("+++")
-        sleep(1)
+        self.close_ppp()
+        self.testAT()
+        # self.enter_command_mode()
         self.waitResponse()
         self.sendCmd(f'AT+CGDCONT=1,"IP","{self.apn}"')
         self.waitResponse()
         self.sendCmd('AT+CGDATA="PPP",1')
         self.waitResponse()
-        self.sendAndGet("ATO")
-        sleep(2)
+        # self.sendAndGet("ATO")
+        sleep(1)
         # Hand modem object off to system PPP module
         self.ppp = PPP(self.stream)
         self.ppp.active(True)
@@ -143,18 +162,37 @@ class GPRS(ATBase):
             username=self.gsm_username,
             password=self.gsm_password,
         )
+        self.sendAndGet("ATO")
+        self.sendAndGet("ATO")
+        self.sendAndGet("ATO")
+        self.stream.read()
         attempts = 10
         while attempts:
             if self.ppp.ifconfig()[0] != "0.0.0.0":
                 return True
             attempts -= 1
-            sleep(2)
+            sleep(1)
         print("Failed to establish PPP. Please check config")
         return False
 
-    def test_ppp_connection(
-        self, test_domain: str = "micropython.org", test_port: int = 80
-    ) -> bool:
+    def test_ppp_connection(self, test_domain: str = "", test_port: int = 80) -> bool:
+
+        hostnames = [
+            "micropython.org",
+            "google.com",
+            "live.com",
+            "youtube.com",
+            "github.com",
+            "facebook.com",
+            "quora.com",
+            "duckduckgo.com",
+            "pinterest.com",
+            "ebay.com",
+        ]
+        if not test_domain:
+            from random import choice
+
+            test_domain = choice(hostnames)
         try:
             import socket
 

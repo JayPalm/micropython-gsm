@@ -61,6 +61,22 @@ class ATBase:
             print(f"waitResponse failed {err}")
         return False, rsp
 
+    def testAT(self) -> bool:
+        """
+        Test response to AT commands
+
+        TODO: Not Tested
+        """
+        self.sendCmd("AT")
+        try:
+            r, d = self.waitResponse()
+
+            if r and d.decode() == "AT\r\r\nOK\r\n":
+                return True
+        except Exception:
+            ...
+        return False
+
     def sendAndGet(self, cmd: str) -> str:
         "Send AT command and return response"
         self.sendCmd(cmd)
@@ -117,3 +133,8 @@ class ATBase:
         sleep(1)
         self.stream.write("+++")
         sleep(1)
+
+    def enter_data_mode(self):
+        self.sendCmd("ATO")
+        self.sendCmd("ATO")
+        self.sendCmd("ATO")

@@ -31,15 +31,6 @@ class MODEM(ATBase):
         self.sendCmd(cmd)
         self.waitResponse()
 
-    def testAT(self):
-        """
-        Test response to AT commands
-
-        TODO: Not Tested
-        """
-        self.sendCmd("AT")
-        return self.waitResponse()
-
     def getModemInfo(self):
         """
         Asks for modem information via the V.25TER standard ATI command
@@ -130,4 +121,5 @@ class MODEM(ATBase):
                 return (int(a[0]), "{} dBm".format(dBm))
             elif int(a[0]) == 31:
                 return (31, "-52 dBm or greater")
-        return (99, "not known or not detectable")
+        # return (99, "not known or not detectable")
+        return ""
